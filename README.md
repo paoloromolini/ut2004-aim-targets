@@ -1,16 +1,11 @@
 # Aim Targets for UT2004
 
-An **offline aim and movement trainer** for Unreal Tournament 2004, built as two
-mutators. No bots: purple spheres **fly at you and kill you the moment they touch
+An **offline aim and movement trainer** for Unreal Tournament 2004, built as a
+mutator. No bots: purple spheres **fly at you and kill you the moment they touch
 you**. Shoot them first with the **Shock Rifle** (beam and combo), the
 **Lightning Gun**, the **Flak Cannon** or the **Rocket Launcher** (the only weapons
 allowed), while you keep moving. Round after round there are more of them, they
 are faster and they zig-zag more.
-
-| Mutator | What it does |
-|---|---|
-| **Aim Targets** | The trainer: levels, targets, scoring, records, progress history |
-| **Damage Numbers** | Fortnite-style pop-up numbers with the damage you deal to other players and bots. Independent from Aim Targets, which does not show damage numbers on its targets |
 
 > Designed for **offline, solo practice** against targets (no bots needed).
 
@@ -22,9 +17,7 @@ You do not need to compile anything: get the ready-made files from the
 1. Download `AimTargets-v1.0.zip` (or the latest version) from the release.
 2. Copy the files of its `System` folder into the `System` folder of your UT2004
    installation (for example `C:\UnrealTournament2004\System`):
-   - `AimTargets.u` and `AimTargets.ucl` - the trainer
-   - `DamageNumbers.u` and `DamageNumbers.ucl` - optional, pop-up damage numbers
-     for your other offline matches
+   - `AimTargets.u` and `AimTargets.ucl`
 3. Start the game: *Instant Action* -> *Deathmatch*, **0 bots**, and enable
    **Aim Targets** in *Mutators*. See [How to play](#how-to-play).
 
@@ -76,39 +69,22 @@ To remove it, delete those files. If you prefer to build it yourself, see
 
 The sources are compiled by the game's own compiler.
 
-1. Copy the `DamageNumbers` and `AimTargets` folders into your UT2004 folder
-   (next to `System`, `Maps`, ...). Each one contains a `Classes` folder (and
-   `AimTargets` also a `Sounds` folder).
-2. Open `System\UT2004.ini` and add these two lines after the last
-   `EditPackages=` line, **in this order**:
+1. Copy the `AimTargets` folder into your UT2004 folder (next to `System`,
+   `Maps`, ...). It contains a `Classes` folder and a `Sounds` folder.
+2. Open `System\UT2004.ini` and add this line after the last `EditPackages=` line:
 
    ```ini
-   EditPackages=DamageNumbers
    EditPackages=AimTargets
    ```
 
-3. Delete `System\DamageNumbers.u` and `System\AimTargets.u` if they already
-   exist. `ucc make` reports "Success" without rebuilding when an old `.u` is there.
+3. Delete `System\AimTargets.u` if it already exists. `ucc make` reports "Success" without rebuilding when an old `.u` is there.
 4. Compile: run `ucc make` from the `System` folder (`System\ucc.exe make`).
    The log must end with `Success - 0 error(s), 0 warning(s)`.
-
-### Helper script (WSL / Linux)
-
-`tools/aimmods.sh` does the copy-and-compile for you. It assumes the game is in
-`/mnt/c/UnrealTournament2004`; change the `UT=` line at the top if yours is elsewhere.
-
-```
-tools/aimmods.sh build     # copy the sources into the game, delete the old .u, recompile
-tools/aimmods.sh disable   # take the mods out of the game folder
-tools/aimmods.sh enable    # put them back
-tools/aimmods.sh report    # build the progress report and open it in the browser
-```
 
 ## How to play
 
 1. *Instant Action* -> *Deathmatch*, **0 bots**, and a map with some open space.
-2. In *Mutators*, enable **Aim Targets**. (**Damage Numbers** is a separate mutator
-   for your other offline matches.)
+2. In *Mutators*, enable **Aim Targets**.
 3. Start. The first round begins a few seconds after the match starts; the
    trainer removes the frag and time limit so the match never ends.
 4. Type `mutate aim help` in the console for the commands.
@@ -161,32 +137,27 @@ mutate aim reset            clear personal records and history
 ## Progress report
 
 Every finished round is saved to `System\AimTargets.ini`. To see how you are
-doing, run:
+doing, run the report script (Python 3, no other dependencies):
 
 ```
-tools/aimmods.sh report
+python3 tools/report.py <path-to>/System/AimTargets.ini AimTargetsReport.html
 ```
 
-It writes `report/AimTargetsReport.html` (a single self-contained page, no
-internet needed) and opens it. You get charts of score, accuracy, time to kill a
+It writes `AimTargetsReport.html` (a single self-contained page, no internet
+needed): open it in your browser, and run the script again after playing more
+rounds to refresh it. You get charts of score, accuracy, time to kill a
 target, level and shots while moving, with a moving average, plus a verdict that
 compares your last 5 rounds with the 5 before. Since the level rises by itself,
 the verdict ignores the score and judges accuracy and time to kill, allowing for
 the fact that accuracy drops a little at every level. You need at least 6 rounds
 before it gives a verdict.
 
-You can also run the script directly (Python 3, no dependencies):
-
-```
-python3 tools/report.py <path-to>/System/AimTargets.ini report.html
-```
-
 ## Configuration
 
 The `AimTargets` settings are written to the `.ini` the first time a round ends.
-The overlay settings (`DamageNumbers`, and the panel `TextScale`) are not written
-automatically: if the file or the section is missing, create it with the lines
-you want to change. Edit the files with the game closed.
+The panel setting (`TextScale`, in its own section) is not written
+automatically: if the section is missing, create it with the line you want to
+change. Edit the files with the game closed.
 
 `System\AimTargets.ini`, section `[AimTargets.MutAimTargets]`:
 
@@ -211,14 +182,6 @@ you want to change. Edit the files with the game closed.
 | `bTouchKills` | True | A target that touches you kills you |
 | `RespawnDelay` | 1.5 | Seconds before you are respawned after dying |
 
-`System\DamageNumbers.ini`, section `[DamageNumbers.DamageNumbersOverlay]`:
-
-| Setting | Default | Meaning |
-|---|---|---|
-| `PosX`, `PosY` | 0.5, 0.40 | Position on screen (0 - 1, the crosshair is at 0.5 / 0.5) |
-| `TextScale` | 1.0 | Size of the numbers |
-| `bShowTotal` | True | Also show the sum of the last second |
-
 `System\AimTargets.ini` also has `TextScale` under `[AimTargets.AimTargetsOverlay]`
 for the size of the panel and the messages.
 
@@ -235,10 +198,10 @@ it with your own and compile again: the sound is built into `AimTargets.u`.
   `TakeDamage`, which is why the Shock combo works.
 - The trainer moves the targets itself every frame: they steer towards you with a
   sideways and vertical swerve that grows with the level.
-- Shots are counted from the ammo the primary fire consumes, and the ammo is
-  refilled every frame.
-- The HUD (and the pop-up numbers of Damage Numbers) are `HudOverlay` actors
-  attached to the player's HUD, so they disappear with the level.
+- Shots are counted from the ammo the weapons consume (the Shock Rifle ball is
+  not a shot), and the ammo is refilled every frame.
+- The HUD is a `HudOverlay` actor attached to the player's HUD, so it disappears
+  with the level.
 - The game logic lives in `AimTargets/Classes/MutAimTargets.uc`.
 
 ## Known limitations
@@ -253,9 +216,6 @@ it with your own and compile again: the sound is built into `AimTargets.u`.
 
 ## Credits
 
-- The idea of pop-up damage numbers comes from
-  [HexedUT2k4](https://github.com/hexengraf/HexedUT2k4) (MIT). `Damage Numbers`
-  is an independent implementation, no code was copied.
 - Unreal Tournament 2004 is a trademark of Epic Games. This project is not
   affiliated with or endorsed by Epic Games.
 

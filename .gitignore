@@ -4,3 +4,7 @@ _old_bot_version/
 
 # Windows download markers
 *:Zone.Identifier
+
+# Not part of this repository
+DamageNumbers/
+tools/aimmods.sh
