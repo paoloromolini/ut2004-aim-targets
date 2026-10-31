@@ -1,0 +1,6 @@
+# Personal data and the discarded first version
+report/
+_old_bot_version/
+
+# Windows download markers
+*:Zone.Identifier
