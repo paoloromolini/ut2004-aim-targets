@@ -1,4 +1,4 @@
-// A floating sphere to shoot at. Spawned, moved and scored by MutAimTargets.
+// A flying sphere. Spawned, moved and scored by MutAimTargets.
 class AimTarget extends Actor;
 
 // Radius of ParticleMeshes.Simple.ParticleSphere2 (its bounding box is +-96).
@@ -8,33 +8,30 @@ var MutAimTargets Trainer;
 
 var float Radius;
 var float SpawnTime;
-var float ExpireTime;
 var bool bDead;
 
 // Movement (driven by the trainer).
 var float Speed;
-var float Range;
-var vector Anchor;
-var vector Lateral;
-var float Sign;
+var float Sign;             // which way it zig-zags (+1 / -1)
+var float Bob;              // up / down swerve (-1 .. 1)
 var float NextChange;
 var vector Vel;
 
-var Material SkinStill;
-var Material SkinMoving;
+// Used when the skin set in the ini cannot be loaded.
+var Material SkinFallback;
 
 
-function Setup(float R, bool bMoving)
+function Setup(float R, Material Skin)
 {
     Radius = R;
 
     SetCollisionSize(R, R);
     SetDrawScale(R / MeshRadius);
 
-    if (bMoving)
-        Skins[0] = SkinMoving;
+    if (Skin != None)
+        Skins[0] = Skin;
     else
-        Skins[0] = SkinStill;
+        Skins[0] = SkinFallback;
 }
 
 
@@ -58,8 +55,7 @@ defaultproperties
     DrawType=DT_StaticMesh
     StaticMesh=StaticMesh'ParticleMeshes.Simple.ParticleSphere2'
 
-    SkinStill=Shader'XGameShaders.PlayerShaders.PlayerTrans'
-    SkinMoving=Shader'XGameShaders.PlayerShaders.PlayerTransRed'
+    SkinFallback=Shader'XGameShaders.PlayerShaders.PlayerTrans'
     Skins(0)=Shader'XGameShaders.PlayerShaders.PlayerTrans'
 
     Physics=PHYS_None

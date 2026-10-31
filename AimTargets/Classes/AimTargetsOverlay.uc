@@ -176,14 +176,12 @@ simulated function DrawPanel(Canvas C)
 {
     local float X;
     local float Y;
-    local int M;
 
     X = C.ClipX * 0.015;
     Y = C.ClipY * 0.25;
-    M = Trainer.ActiveMode;
 
     Y += DrawLine(
-        C, Trainer.ModeName(M) $ "   LV " $ Trainer.FormatLevel(Trainer.Difficulty),
+        C, "LEVEL " $ Trainer.PlayLevel $ "   (" $ Trainer.LevelTargets() $ " targets)",
         X, Y, False, False, 255, 215, 0, 255
     );
 
@@ -201,11 +199,14 @@ simulated function DrawPanel(Canvas C)
     if (Trainer.Streak > 1)
         Y += DrawLine(C, "STREAK  " $ Trainer.Streak, X, Y, False, False, 255, 150, 0, 255);
 
-    if (Trainer.TimeCount > 0)
-        Y += DrawLine(C, "AVG TIME  " $ Trainer.AvgTimeMs() $ " ms", X, Y, False, False, 255, 255, 255, 255);
+    if (Trainer.DeathsTouch + Trainer.DeathsStill > 0)
+        Y += DrawLine(C, "DEATHS  " $ (Trainer.DeathsTouch + Trainer.DeathsStill), X, Y, False, False, 255, 90, 90, 255);
 
-    if (Trainer.BestScore[M] > 0)
-        Y += DrawLine(C, "BEST  " $ Trainer.BestScore[M], X, Y, False, False, 160, 160, 160, 255);
+    if (Trainer.TimeCount > 0)
+        Y += DrawLine(C, "TIME TO KILL  " $ Trainer.AvgTimeMs() $ " ms", X, Y, False, False, 255, 255, 255, 255);
+
+    if (Trainer.RecordScore > 0)
+        Y += DrawLine(C, "BEST  " $ Trainer.RecordScore, X, Y, False, False, 160, 160, 160, 255);
 }
 
 

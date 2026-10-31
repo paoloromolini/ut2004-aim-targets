@@ -15,11 +15,12 @@ from datetime import datetime
 INI = sys.argv[1] if len(sys.argv) > 1 else "/mnt/c/UnrealTournament2004/System/AimTargets.ini"
 OUT = sys.argv[2] if len(sys.argv) > 2 else "AimTargetsReport.html"
 
-MODES = ["FLICK", "STRAFE", "SNIPER"]
+MODES = ["FLICK", "STRAFE", "SNIPER", "CHASE"]
 MODE_INFO = {
     "FLICK": "static targets - reaction and first-shot precision",
     "STRAFE": "strafing targets - tracking while you move",
     "SNIPER": "far, small targets - Lightning Gun precision",
+    "CHASE": "targets fly at you, level after level: more of them, faster, more zig-zag",
 }
 MIN_ROUNDS = 6      # rounds needed before giving a verdict
 WINDOW = 5          # rounds compared (last N vs the N before)
@@ -53,6 +54,9 @@ def read_history(path):
                 "bull": int(f[10]),
                 "combo": int(f[11]),
                 "shots": int(f[12]),
+                # Added later: older history lines do not have them.
+                "dtouch": int(f[13]) if len(f) > 13 else 0,
+                "dstill": int(f[14]) if len(f) > 14 else 0,
             })
         except ValueError:
             continue
@@ -132,6 +136,13 @@ def verdict(rows):
     score_pct = (sd / sb * 100) if sb else 0
     ms_pct = (md / mb * 100) if mb else 0
 
+    chase = rows[-1]["mode"] == "CHASE"
+    if chase:
+        # The level rises by itself, so the score always grows and accuracy drops a
+        # little at every level: judge accuracy per level and ignore the score.
+        score_pct = 0
+        ad = ad + 2 * dd
+
     good = (score_pct >= 5) + (ad >= 3) + (ms_pct <= -5) + (dd >= 0.5)
     bad = (score_pct <= -5) + (ad <= -3) + (ms_pct >= 5) + (dd <= -0.5)
 
@@ -142,15 +153,15 @@ def verdict(rows):
     else:
         label, cls = "Stable", "neutral"
 
-    parts = [
-        f"score {sb:.0f} -> {sa:.0f} ({score_pct:+.0f}%)",
-        f"accuracy {ab:.0f}% -> {aa:.0f}% ({ad:+.0f} pts)",
-    ]
+    parts = [] if chase else [f"score {sb:.0f} -> {sa:.0f} ({score_pct:+.0f}%)"]
+    parts.append(f"accuracy {ab:.0f}% -> {aa:.0f}%")
     if ma_ > 0 and mb > 0:
-        parts.append(f"time per target {mb:.0f} -> {ma_:.0f} ms ({ms_pct:+.0f}%)")
-    parts.append(f"difficulty {db:.1f} -> {da:.1f}")
+        parts.append(f"time to kill a target {mb:.0f} -> {ma_:.0f} ms ({ms_pct:+.0f}%)")
+    parts.append(f"{'level' if chase else 'difficulty'} {db:.1f} -> {da:.1f}")
     text = f"Last {k} rounds vs the {k} before: " + "; ".join(parts) + "."
-    if dd >= 0.5 and score_pct < 5:
+    if chase and dd >= 1:
+        text += " You reached higher levels: some loss of accuracy is expected, the verdict allows for it."
+    elif dd >= 0.5 and score_pct < 5:
         text += " The game raised the difficulty, so flat scores can still mean progress."
     return (label, cls, text)
 
@@ -159,29 +170,31 @@ def daily_table(rows):
     days = OrderedDict()
     for r in rows:
         days.setdefault(r["date"].strftime("%Y-%m-%d"), []).append(r)
-    out = ["<table><tr><th>Day</th><th>Rounds</th><th>Avg accuracy</th><th>Avg difficulty</th>"
-           "<th>Shots while moving</th><th>Best streak</th></tr>"]
+    out = ["<table><tr><th>Day</th><th>Rounds</th><th>Avg accuracy</th><th>Avg level</th>"
+           "<th>Shots while moving</th><th>Best streak</th><th>Deaths</th></tr>"]
     for d, rs in list(days.items())[::-1][:30]:
         out.append(
             f"<tr><td>{d}</td><td>{len(rs)}</td><td>{avg([r['acc'] for r in rs]):.0f}%</td>"
             f"<td>{avg([r['diff'] for r in rs]):.1f}</td>"
             f"<td>{avg([r['moving'] for r in rs]):.0f}%</td>"
-            f"<td>{max(r['streak'] for r in rs)}</td></tr>"
+            f"<td>{max(r['streak'] for r in rs)}</td>"
+            f"<td>{sum(r['dtouch'] + r['dstill'] for r in rs)}</td></tr>"
         )
     out.append("</table>")
     return "".join(out)
 
 
 def rounds_table(rows):
-    out = ["<table><tr><th>Date</th><th>Mode</th><th>Diff</th><th>Score</th><th>Accuracy</th>"
-           "<th>ms / target</th><th>Hit</th><th>Expired</th><th>Moving</th><th>Streak</th>"
-           "<th>Bullseyes</th><th>Combos</th></tr>"]
+    out = ["<table><tr><th>Date</th><th>Mode</th><th>Level</th><th>Score</th><th>Accuracy</th>"
+           "<th>ms / kill</th><th>Hit</th><th>Moving</th><th>Streak</th>"
+           "<th>Bullseyes</th><th>Combos</th><th>Deaths</th></tr>"]
     for r in rows[::-1][:40]:
         out.append(
-            f"<tr><td>{r['date'].strftime('%Y-%m-%d %H:%M')}</td><td>{r['mode']}</td><td>{r['diff']:.1f}</td>"
+            f"<tr><td>{r['date'].strftime('%Y-%m-%d %H:%M')}</td><td>{r['mode']}</td><td>{r['diff']:g}</td>"
             f"<td>{r['score']}</td><td>{r['acc']}%</td><td>{r['ms'] or '-'}</td><td>{r['hit']}</td>"
-            f"<td>{r['expired']}</td><td>{r['moving']}%</td><td>{r['streak']}</td>"
-            f"<td>{r['bull']}</td><td>{r['combo']}</td></tr>"
+            f"<td>{r['moving']}%</td><td>{r['streak']}</td>"
+            f"<td>{r['bull']}</td><td>{r['combo']}</td>"
+            f"<td>{r['dtouch'] + r['dstill'] or '-'}</td></tr>"
         )
     out.append("</table>")
     return "".join(out)
@@ -229,14 +242,17 @@ def build(rows):
         best = max(r["score"] for r in rs)
         parts.append(
             f"<div class='card'><span class='badge {cls}'>{label}</span> "
-            f"{len(rs)} rounds, best score {best}, current difficulty {rs[-1]['diff']:.1f}."
+            f"{len(rs)} rounds, best score {best}, {'highest level ' + format(max(r['diff'] for r in rs), 'g') if m == 'CHASE' else 'current difficulty ' + format(rs[-1]['diff'], '.1f')}."
             f"<br><span class='sub'>{html.escape(text)}</span><div class='charts'>"
             + chart([r["score"] for r in rs], "Score", color="#4fc3f7")
             + chart([r["acc"] for r in rs], "Accuracy", "%", color="#81c784")
-            + chart([r["ms"] for r in rs if r["ms"] > 0], "Time per target", " ms",
+            + chart([r["ms"] for r in rs if r["ms"] > 0], "Time to kill a target" if m == "CHASE" else "Time per target", " ms",
                     color="#ff8a65", lower_is_better=True)
-            + chart([r["diff"] for r in rs], "Difficulty", color="#ba68c8")
+            + chart([r["diff"] for r in rs], "Level" if m == "CHASE" else "Difficulty", color="#ba68c8")
             + chart([r["moving"] for r in rs], "Shots while moving", "%", color="#4db6ac")
+            + (chart([r["dtouch"] + r["dstill"] for r in rs], "Deaths per round", color="#e57373",
+                     lower_is_better=True)
+               if any(r["dtouch"] + r["dstill"] for r in rs) else "")
             + "</div></div>"
         )
 
