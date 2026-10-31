@@ -14,6 +14,23 @@ are faster and they zig-zag more.
 
 > Designed for **offline, solo practice** against targets (no bots needed).
 
+## Download
+
+You do not need to compile anything: get the ready-made files from the
+[**Releases** page](https://github.com/paoloromolini/ut2004-aim-targets/releases/latest).
+
+1. Download `AimTargets-v1.0.zip` (or the latest version) from the release.
+2. Copy the files of its `System` folder into the `System` folder of your UT2004
+   installation (for example `C:\UnrealTournament2004\System`):
+   - `AimTargets.u` and `AimTargets.ucl` - the trainer
+   - `DamageNumbers.u` and `DamageNumbers.ucl` - optional, pop-up damage numbers
+     for your other offline matches
+3. Start the game: *Instant Action* -> *Deathmatch*, **0 bots**, and enable
+   **Aim Targets** in *Mutators*. See [How to play](#how-to-play).
+
+To remove it, delete those files. If you prefer to build it yourself, see
+[Installation from source](#installation-from-source).
+
 ## How the game works
 
 - Targets **never stand still and never disappear**: they always fly towards you,
@@ -53,11 +70,11 @@ are faster and they zig-zag more.
 ## Requirements
 
 - Unreal Tournament 2004 (developed and compiled against build 3374)
-- The game's own `ucc.exe` to compile (it ships with the game)
+- Only to build from source: the game's own `ucc.exe` (it ships with the game)
 
-## Installation
+## Installation from source
 
-The mods are distributed as source and compiled by the game's compiler.
+The sources are compiled by the game's own compiler.
 
 1. Copy the `DamageNumbers` and `AimTargets` folders into your UT2004 folder
    (next to `System`, `Maps`, ...). Each one contains a `Classes` folder (and
